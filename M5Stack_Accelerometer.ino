@@ -53,7 +53,8 @@ void MPU9250_init()
 
     // Calibrate gyro and accelerometers, load biases in bias registers
     IMU.calibrateMPU9250(IMU.gyroBias, IMU.accelBias);
-
+    delay(1000); 
+    
     IMU.initMPU9250();
 
     byte d = IMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
@@ -152,95 +153,12 @@ void loop() {
       M5.Lcd.setCursor(72,  96); M5.Lcd.print((int)(IMU.mz));
       M5.Lcd.setCursor(108, 96); M5.Lcd.print("mG");
 #endif // LCD  
-      // Define output variables from updated quaternion---these are Tait-Bryan
-      // angles, commonly used in aircraft orientation. In this coordinate system,
-      // the positive z-axis is down toward Earth. Yaw is the angle between Sensor
-      // x-axis and Earth magnetic North (or true North if corrected for local
-      // declination, looking down on the sensor positive yaw is counterclockwise.
-      // Pitch is angle between sensor x-axis and Earth ground plane, toward the
-      // Earth is positive, up toward the sky is negative. Roll is angle between
-      // sensor y-axis and Earth ground plane, y-axis up is positive roll. These
-      // arise from the definition of the homogeneous rotation matrix constructed
-      // from quaternions. Tait-Bryan angles as well as Euler angles are
-      // non-commutative; that is, the get the correct orientation the rotations
-      // must be applied in the correct order which for this configuration is yaw,
-      // pitch, and then roll.
-      // For more see
-      // http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-      // which has additional links.
-      float qw = getQ()[0];
-      float qx = getQ()[1];
-      float qy = getQ()[2];
-      float qz = getQ()[3];
-//      // original
-//      IMU.yaw   = atan2(
-//        2.0f * (qx * qy + qw * qz),
-//        qw * qw + qx * qx - qy * qy - qz * qz);
-//      IMU.pitch = -asin(2.0f * qx * qz - qw * qy);
-//      IMU.roll  = atan2(
-//        2.0f * (qw * qx + qy * qz),
-//        qw * qw - qx * qx - qy * qy + qz * qz);
-//      // original
-      // wikipedia
-      float sinr = 2.0 * ( qw * qx + qy * qz );
-      float cosr = 1.0 - 2.0 * ( qx * qx + qy * qy );
-      IMU.roll = atan2( sinr, cosr );
-
-      float sinp = 2.0 * ( qw * qy - qz * qx );
-      if ( fabs( sinp ) >= 1.0 )
-//        IMU.pitch = copysign( M_PI / 2, sinp );
-        IMU.pitch = (sinp > 0) ?(M_PI / 2) :-(M_PI / 2);
-      else
-        IMU.pitch = asin( sinp );
-
-      float siny = 2.0 * ( qw * qz + qx * qy );
-      float cosy = 1.0 - 2.0 * ( qy * qy + qz * qz );
-      IMU.yaw = atan2( siny, cosy );
-      // wikipedia
-      
-      IMU.pitch *= RAD_TO_DEG;
-      IMU.yaw   *= RAD_TO_DEG;
-      // Declination of SparkFun Electronics (40°05'26.6"N 105°11'05.9"W) is
-      //   8° 30' E  ± 0° 21' (or 8.5°) on 2016-07-19
-      // - http://www.ngdc.noaa.gov/geomag-web/#declination
-      // Declination of Tokyo (35°40'59.0"N 139°48'32.0"E) is
-      //   7° 29' W  ± 0° 18' changing by 0° 4' W on 2018-04-19
-//      IMU.yaw   -= 8.5;
-      IMU.yaw   += 7.3;
-      IMU.roll  *= RAD_TO_DEG;
-
-      //M5.Lcd.setCursor( 0,140);  M5.Lcd.printf("   yaw: %+6.1f",(IMU.yaw));
-      //M5.Lcd.setCursor( 0,150);  M5.Lcd.printf(" pitch: %+6.1f",(IMU.pitch));
-      //M5.Lcd.setCursor( 0,160);  M5.Lcd.printf("  roll: %+6.1f",(IMU.roll));
-
-      // With these settings the filter is updating at a ~145 Hz rate using the
-      // Madgwick scheme and >200 Hz using the Mahony scheme even though the
-      // display refreshes at only 2 Hz. The filter update rate is determined
-      // mostly by the mathematical steps in the respective algorithms, the
-      // processor speed (8 MHz for the 3.3V Pro Mini), and the magnetometer ODR:
-      // an ODR of 10 Hz for the magnetometer produce the above rates, maximum
-      // magnetometer ODR of 100 Hz produces filter update rates of 36 - 145 and
-      // ~38 Hz for the Madgwick and Mahony schemes, respectively. This is
-      // presumably because the magnetometer read takes longer than the gyro or
-      // accelerometer reads. This filter update rate should be fast enough to
-      // maintain accurate platform orientation for stabilization control of a
-      // fast-moving robot or quadcopter. Compare to the update rate of 200 Hz
-      // produced by the on-board Digital Motion Processor of Invensense's MPU6050
-      // 6 DoF and MPU9150 9DoF sensors. The 3.3 V 8 MHz Pro Mini is doing pretty
-      // well!
-
-      M5.Lcd.setCursor(0, 140);
-      M5.Lcd.printf("yaw:%6.1f   pitch:%6.1f   roll:%6.1f  ypr \r\n",(IMU.yaw), (IMU.pitch), (IMU.roll));
-      //M5.Lcd.setCursor( 0, 170);  M5.Lcd.printf("rt(Hz): %6.1f", (float) IMU.sumCount / IMU.sum);
 
       IMU.count = millis();
       IMU.sumCount = 0;
       IMU.sum = 0;
 
     } // if (IMU.delt_t > 500)
-
-   // M5.Lcd.setCursor( 0, 0);  M5.Lcd.printf("x(deg.): %6.1f", angle_x * 180.0);
-   // M5.Lcd.setCursor( 0,10);  M5.Lcd.printf("y(deg.): %6.1f", angle_y * 180.0);
 
     if ( resetMPU9250 ) {
       Serial.println("reset MPU !");
