@@ -3,6 +3,8 @@
 #include "utility/quaternionFilters.h"
 
 #define LCD
+const static uint32_t ACCEL_THR_MAX = 700;
+const static uint32_t ACCEL_THR_MIN = 300;
 
 // Devices
 MPU9250 IMU;
@@ -52,9 +54,9 @@ void MPU9250_init()
     Serial.print(IMU.SelfTest[5],1); Serial.println("% of factory value");
 
     // Calibrate gyro and accelerometers, load biases in bias registers
-    IMU.calibrateMPU9250(IMU.gyroBias, IMU.accelBias);
+    //IMU.calibrateMPU9250(IMU.gyroBias, IMU.accelBias);
     delay(1000); 
-    
+
     IMU.initMPU9250();
 
     byte d = IMU.readByte(AK8963_ADDRESS, WHO_AM_I_AK8963);
@@ -132,6 +134,7 @@ void loop() {
     // if (IMU.delt_t > 500)
     if (IMU.delt_t > 100)
     {
+#if 0
 #ifdef LCD
       M5.Lcd.fillScreen(BLACK);
       M5.Lcd.setTextColor(GREEN ,BLACK);
@@ -153,6 +156,31 @@ void loop() {
       M5.Lcd.setCursor(72,  96); M5.Lcd.print((int)(IMU.mz));
       M5.Lcd.setCursor(108, 96); M5.Lcd.print("mG");
 #endif // LCD  
+#endif
+
+#if 1
+#ifdef LCD
+      M5.Lcd.fillScreen(BLACK);
+      M5.Lcd.setTextColor(GREEN ,BLACK);
+      M5.Lcd.setTextSize(3);
+      if(      1000*IMU.ax >=  ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
+        M5.Lcd.setCursor(50, 50); M5.Lcd.print("<-");
+      }else if(1000*IMU.ax <= -ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
+        M5.Lcd.setCursor(50, 50); M5.Lcd.print("->");
+      }else if(1000*IMU.ay >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
+        M5.Lcd.setCursor(50, 50); M5.Lcd.print("A");
+      }else if(1000*IMU.ay <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
+        M5.Lcd.setCursor(50, 50); M5.Lcd.print("Z");
+      }else if(1000*IMU.az >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
+        M5.Lcd.setCursor(50, 50); M5.Lcd.print("O");
+      }else if(1000*IMU.az <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
+        M5.Lcd.setCursor(50, 50); M5.Lcd.print("M");
+      }else{
+        M5.Lcd.setCursor(50, 50); M5.Lcd.print("not stable");
+      }
+
+#endif // LCD  
+#endif
 
       IMU.count = millis();
       IMU.sumCount = 0;
