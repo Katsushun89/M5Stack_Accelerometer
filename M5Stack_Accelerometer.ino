@@ -162,21 +162,21 @@ void loop() {
 #ifdef LCD
       M5.Lcd.fillScreen(BLACK);
       M5.Lcd.setTextColor(GREEN ,BLACK);
-      M5.Lcd.setTextSize(3);
+      M5.Lcd.setTextSize(1);
       if(      1000*IMU.ax >=  ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        M5.Lcd.setCursor(50, 50); M5.Lcd.print("<-");
+        M5.Lcd.fillTriangle(160, 40, 280, 120, 160, 200, 0xffff);
       }else if(1000*IMU.ax <= -ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        M5.Lcd.setCursor(50, 50); M5.Lcd.print("->");
+        M5.Lcd.fillTriangle(160, 40, 40, 120, 160, 200, 0xffff);
       }else if(1000*IMU.ay >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        M5.Lcd.setCursor(50, 50); M5.Lcd.print("A");
+        M5.Lcd.fillTriangle(160, 40, 60, 160, 260, 160, 0x51d);
       }else if(1000*IMU.ay <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        M5.Lcd.setCursor(50, 50); M5.Lcd.print("Z");
+        M5.Lcd.fillTriangle(160, 160, 60, 40, 260, 40, 0x51d);
       }else if(1000*IMU.az >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
-        M5.Lcd.setCursor(50, 50); M5.Lcd.print("O");
+        M5.Lcd.fillCircle(160, 120, 100, 0xe8e4);
       }else if(1000*IMU.az <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
-        M5.Lcd.setCursor(50, 50); M5.Lcd.print("M");
+        M5.Lcd.fillCircle(160, 120, 100, 0x2589);
       }else{
-        M5.Lcd.setCursor(50, 50); M5.Lcd.print("not stable");
+        M5.Lcd.fillRoundRect(40, 40, 320-80, 240-80, 10, 0xff80);
       }
 
 #endif // LCD  
