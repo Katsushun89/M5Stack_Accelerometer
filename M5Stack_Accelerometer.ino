@@ -1,3 +1,6 @@
+#include <AquesTalkTTS.h>
+#include <Avatar.h>
+#include <tasks/LipSync.h>
 #include <M5Stack.h>
 #include "utility/MPU9250.h"
 #include "utility/quaternionFilters.h"
@@ -11,6 +14,27 @@ MPU9250 IMU;
 
 boolean resetMPU9250 = false;
 
+using namespace m5avatar;
+Avatar avatar;
+
+// AquesTalk License Key
+// NULL or wrong value is just ignored
+const char* AQUESTALK_KEY = "XXXX-XXXX-XXXX-XXXX";
+
+typedef enum {
+  ACCEL_UNKNOWN = 0,
+  ACCEL_LEFT,
+  ACCEL_RIGHT,
+  ACCEL_TOP,
+  ACCEL_BOTTOM,
+  ACCEL_FRONT,
+  ACCEL_BACK,
+  ACCEL_THRESHOLD,
+} ACCEL_DIR;
+
+String directionVoice[] = {"", "左", "右", "上", "下", "おやすみ", "ぐうぐう",""};
+String directionSpeech[] = {"", "Left", "Right", "Top", "Bottom", "Good night", "Zzz",""};
+
 void setup()
 {
   Serial.begin(115200);
@@ -20,13 +44,12 @@ void setup()
   Wire.begin();
   
   MPU9250_init();
-  
-  M5.Lcd.setTextFont(1);
-  M5.Lcd.setTextSize(1);
-  M5.Lcd.setTextColor(TFT_WHITE, TFT_BLACK);
-  M5.Lcd.println("M5Stack Balance Mode start");
-  
-
+  int iret = TTS.createK(AQUESTALK_KEY);
+  Serial.print("TTS.createK iret "); Serial.print(iret);
+  M5.Lcd.setBrightness(30);
+  M5.Lcd.clear();
+  avatar.init();
+  avatar.addTask(lipSync, "lipSync");
 }
 
 void MPU9250_init()
@@ -70,7 +93,19 @@ void MPU9250_init()
   }
 }
 
+//true: updated, false:not updated
+boolean updateAccelDirection(ACCEL_DIR *preDir, ACCEL_DIR newDir) {
+  if(*preDir != newDir && newDir > ACCEL_UNKNOWN && newDir < ACCEL_THRESHOLD){
+    *preDir = newDir;
+    return true;
+  }
+  return false;
+}
+
 void loop() {
+  static boolean is_updatedAccelDir = false;
+  static ACCEL_DIR currentAccelDirection = ACCEL_UNKNOWN;
+  
   if (IMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
   {  
     IMU.readAccelData(IMU.accelCount);  // Read the x/y/z adc values
@@ -134,52 +169,23 @@ void loop() {
     // if (IMU.delt_t > 500)
     if (IMU.delt_t > 100)
     {
-#if 0
-#ifdef LCD
-      M5.Lcd.fillScreen(BLACK);
-      M5.Lcd.setTextColor(GREEN ,BLACK);
-      M5.Lcd.setCursor(0, 0); M5.Lcd.print("MPU9250/AK8963");
-      M5.Lcd.setCursor(0, 32); M5.Lcd.print(" x     y     z  ");
-
-      M5.Lcd.setCursor(0,   48); M5.Lcd.print((int)(1000*IMU.ax));
-      M5.Lcd.setCursor(36,  48); M5.Lcd.print((int)(1000*IMU.ay));
-      M5.Lcd.setCursor(72,  48); M5.Lcd.print((int)(1000*IMU.az));
-      M5.Lcd.setCursor(108, 48); M5.Lcd.print("mg");
-
-      M5.Lcd.setCursor(0,   64); M5.Lcd.print((int)(IMU.gx));
-      M5.Lcd.setCursor(36,  64); M5.Lcd.print((int)(IMU.gy));
-      M5.Lcd.setCursor(72,  64); M5.Lcd.print((int)(IMU.gz));
-      M5.Lcd.setCursor(108, 64); M5.Lcd.print("o/s");
-
-      M5.Lcd.setCursor(0,   96); M5.Lcd.print((int)(IMU.mx));
-      M5.Lcd.setCursor(36,  96); M5.Lcd.print((int)(IMU.my));
-      M5.Lcd.setCursor(72,  96); M5.Lcd.print((int)(IMU.mz));
-      M5.Lcd.setCursor(108, 96); M5.Lcd.print("mG");
-#endif // LCD  
-#endif
 
 #if 1
-#ifdef LCD
-      M5.Lcd.fillScreen(BLACK);
-      M5.Lcd.setTextColor(GREEN ,BLACK);
-      M5.Lcd.setTextSize(1);
       if(      1000*IMU.ax >=  ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        M5.Lcd.fillTriangle(160, 40, 280, 120, 160, 200, 0xffff);
+        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_LEFT);
       }else if(1000*IMU.ax <= -ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        M5.Lcd.fillTriangle(160, 40, 40, 120, 160, 200, 0xffff);
+        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_RIGHT);
       }else if(1000*IMU.ay >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        M5.Lcd.fillTriangle(160, 40, 60, 160, 260, 160, 0x51d);
+        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_TOP);
       }else if(1000*IMU.ay <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        M5.Lcd.fillTriangle(160, 160, 60, 40, 260, 40, 0x51d);
+        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_BOTTOM);
       }else if(1000*IMU.az >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
-        M5.Lcd.fillCircle(160, 120, 100, 0xe8e4);
+        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_FRONT);
       }else if(1000*IMU.az <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
-        M5.Lcd.fillCircle(160, 120, 100, 0x2589);
+        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_BACK);
       }else{
-        M5.Lcd.fillRoundRect(40, 40, 320-80, 240-80, 10, 0xff80);
+        //not update
       }
-
-#endif // LCD  
 #endif
 
       IMU.count = millis();
@@ -187,6 +193,16 @@ void loop() {
       IMU.sum = 0;
 
     } // if (IMU.delt_t > 500)
+
+    // update Accecl check
+    if(is_updatedAccelDir){
+      is_updatedAccelDir = false;
+      TTS.playK(directionVoice[currentAccelDirection].c_str(), 80);
+      avatar.setSpeechText(directionSpeech[currentAccelDirection].c_str());
+      delay(1000);
+      avatar.setSpeechText("");      
+      delay(1000);
+    }
 
     if ( resetMPU9250 ) {
       Serial.println("reset MPU !");
