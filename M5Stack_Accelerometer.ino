@@ -21,6 +21,8 @@ Avatar avatar;
 // NULL or wrong value is just ignored
 const char* AQUESTALK_KEY = "XXXX-XXXX-XXXX-XXXX";
 
+
+
 typedef enum {
   ACCEL_UNKNOWN = 0,
   ACCEL_LEFT,
@@ -32,8 +34,18 @@ typedef enum {
   ACCEL_THRESHOLD,
 } ACCEL_DIR;
 
-String directionVoice[] = {"", "左", "右", "上", "下", "おやすみ", "ぐうぐう",""};
-String directionSpeech[] = {"", "Left", "Right", "Top", "Bottom", "Good night", "Zzz",""};
+const String voices[] = {"", "左", "右", "上", "下", "おやすみ", "ぐうぐう",""};
+const String speeches[] = {"", "Left", "Right", "Top", "Bottom", "Good night", "Zzz",""};
+const Expression expressions[] = {
+  Expression::Neutral,
+  Expression::Sad,
+  Expression::Sad,
+  Expression::Happy,
+  Expression::Angry,
+  Expression::Sleepy,
+  Expression::Neutral,
+  Expression::Neutral
+};
 
 void setup()
 {
@@ -93,17 +105,17 @@ void MPU9250_init()
   }
 }
 
-//true: updated, false:not updated
-boolean updateAccelDirection(ACCEL_DIR *preDir, ACCEL_DIR newDir) {
-  if(*preDir != newDir && newDir > ACCEL_UNKNOWN && newDir < ACCEL_THRESHOLD){
-    *preDir = newDir;
+//return true:updated, false:not updated
+boolean updateAccelDirection(ACCEL_DIR *preDir, ACCEL_DIR curDir) {
+  if(*preDir != curDir && curDir > ACCEL_UNKNOWN && curDir < ACCEL_THRESHOLD){
+    *preDir = curDir;
     return true;
   }
   return false;
 }
 
 void loop() {
-  static boolean is_updatedAccelDir = false;
+  static boolean is_updatedAccelDirection = false;
   static ACCEL_DIR currentAccelDirection = ACCEL_UNKNOWN;
   
   if (IMU.readByte(MPU9250_ADDRESS, INT_STATUS) & 0x01)
@@ -170,23 +182,21 @@ void loop() {
     if (IMU.delt_t > 100)
     {
 
-#if 1
       if(      1000*IMU.ax >=  ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_LEFT);
+        is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_LEFT);
       }else if(1000*IMU.ax <= -ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_RIGHT);
+        is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_RIGHT);
       }else if(1000*IMU.ay >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_TOP);
+        is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_TOP);
       }else if(1000*IMU.ay <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
-        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_BOTTOM);
+        is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_BOTTOM);
       }else if(1000*IMU.az >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
-        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_FRONT);
+        is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_FRONT);
       }else if(1000*IMU.az <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
-        is_updatedAccelDir = updateAccelDirection(&currentAccelDirection, ACCEL_BACK);
+        is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_BACK);
       }else{
         //not update
       }
-#endif
 
       IMU.count = millis();
       IMU.sumCount = 0;
@@ -195,10 +205,11 @@ void loop() {
     } // if (IMU.delt_t > 500)
 
     // update Accecl check
-    if(is_updatedAccelDir){
-      is_updatedAccelDir = false;
-      TTS.playK(directionVoice[currentAccelDirection].c_str(), 80);
-      avatar.setSpeechText(directionSpeech[currentAccelDirection].c_str());
+    if(is_updatedAccelDirection){
+      is_updatedAccelDirection = false;
+      TTS.playK(voices[currentAccelDirection].c_str(), 80);
+      avatar.setSpeechText(speeches[currentAccelDirection].c_str());
+      avatar.setExpression(expressions[currentAccelDirection]);
       delay(1000);
       avatar.setSpeechText("");      
       delay(1000);
