@@ -181,18 +181,20 @@ void loop() {
     // if (IMU.delt_t > 500)
     if (IMU.delt_t > 100)
     {
-
-      if(      1000*IMU.ax >=  ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
+      float ax = 1000*IMU.ax;
+      float ay = 1000*IMU.ay;
+      float az = 1000*IMU.az;
+      if(      ax >=  ACCEL_THR_MAX && abs(ay) <= ACCEL_THR_MIN && abs(az) <= ACCEL_THR_MIN){
         is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_LEFT);
-      }else if(1000*IMU.ax <= -ACCEL_THR_MAX && abs(1000*IMU.ay) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
+      }else if(ax <= -ACCEL_THR_MAX && abs(ay) <= ACCEL_THR_MIN && abs(az) <= ACCEL_THR_MIN){
         is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_RIGHT);
-      }else if(1000*IMU.ay >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
+      }else if(ay >=  ACCEL_THR_MAX && abs(ax) <= ACCEL_THR_MIN && abs(az) <= ACCEL_THR_MIN){
         is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_TOP);
-      }else if(1000*IMU.ay <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.az) <= ACCEL_THR_MIN){
+      }else if(ay <= -ACCEL_THR_MAX && abs(ax) <= ACCEL_THR_MIN && abs(az) <= ACCEL_THR_MIN){
         is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_BOTTOM);
-      }else if(1000*IMU.az >=  ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
+      }else if(az >=  ACCEL_THR_MAX && abs(ax) <= ACCEL_THR_MIN && abs(ay) <= ACCEL_THR_MIN){
         is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_FRONT);
-      }else if(1000*IMU.az <= -ACCEL_THR_MAX && abs(1000*IMU.ax) <= ACCEL_THR_MIN && abs(1000*IMU.ay) <= ACCEL_THR_MIN){
+      }else if(az <= -ACCEL_THR_MAX && abs(ax) <= ACCEL_THR_MIN && abs(ay) <= ACCEL_THR_MIN){
         is_updatedAccelDirection = updateAccelDirection(&currentAccelDirection, ACCEL_BACK);
       }else{
         //not update
